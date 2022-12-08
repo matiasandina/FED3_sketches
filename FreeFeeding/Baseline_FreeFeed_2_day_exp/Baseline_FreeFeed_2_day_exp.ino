@@ -5,7 +5,7 @@
   Copyright (c) 2020 Matias Andina
 
 */
-
+#include "RTClib.h"
 #include "FED3.h"          //Include the local FED3 library 
 String sketch = "Menu";  //Unique identifier text for each sketch
 FED3 fed3(sketch);       //Start the FED3 object
@@ -28,33 +28,36 @@ int day2;
 DateTime day2_lights_on;
 DateTime day2_lights_off;
 DateTime day2_food_back;
+// buffer for printing datetimes
+char buf2[] = "YYYY-MM-DDThh:mm:ss";
 
 void setup() {
   fed3.FED3Menu = true;  //Activate the menu function at startup
   fed3.begin();          //Setup the FED3 hardware
   fed3.EnableSleep = false;
+  Serial.begin(9600);
   // Turn to true if you are using FEDWatcher
-  fed3.setSerial(true);
+  //fed3.setSerial(true);
   // try to read day0 from SD?
   auto one_day = TimeSpan(0, 24, 0, 0); 
   auto two_day = TimeSpan(0, 48, 0, 0);
-  DateTime day0_dt = fed3.now();
+  day0_dt = fed3.now();
   // save day0 to SD
   // Math for day 1
-  auto day1_dt = day0_dt + one_day;
-  auto day1 = day1_dt.day();
+  day1_dt = day0_dt + TimeSpan(0, 24, 0, 0);
+  day1 = day1_dt.day();
   // DateTime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour=0, uint8_t min=0, uint8_t sec=0)
-  DateTime day1_lights_on = DateTime(day1_dt.year(), day1_dt.month(), day1_dt.day(), lights_on_hour);
-  DateTime day1_lights_off = DateTime(day1_dt.year(), day1_dt.month(), day1_dt.day(), lights_off_hour);
-  DateTime day1_experiment_end_hour = DateTime(day1_dt.year(), day1_dt.month(), day1_dt.day(), experiment_end_hour);
+  day1_lights_on = DateTime(day1_dt.year(), day1_dt.month(), day1_dt.day(), lights_on_hour);
+  day1_lights_off = DateTime(day1_dt.year(), day1_dt.month(), day1_dt.day(), lights_off_hour);
+  day1_experiment_end_hour = DateTime(day1_dt.year(), day1_dt.month(), day1_dt.day(), experiment_end_hour);
   
   
   // Math for day 2
-  DateTime day2_dt = day0_dt + two_day;
+  day2_dt = day0_dt + two_day;
   int day2 = day2_dt.day();
-  DateTime day2_lights_on = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), lights_on_hour);
-  DateTime day2_lights_off = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), lights_off_hour);
-  DateTime day2_food_back = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), experiment_end_hour);
+  day2_lights_on = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), lights_on_hour);
+  day2_lights_off = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), lights_off_hour);
+  day2_food_back = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), experiment_end_hour);
 
 }
 
@@ -77,16 +80,35 @@ void loop() {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   if (fed3.FEDmode == 1) {
+      Serial.println("Day0 is at:");
+      Serial.println(day0_dt.toString(buf2));
+      Serial.println("Day1 is at:");
+      Serial.println(day1_dt.toString(buf2));
+      Serial.println("Day1 is at lights on at:");
+      Serial.println(day1_lights_on.toString(buf2));
+      Serial.println("Day2 is at:");
+      Serial.println(day2_dt.toString(buf2));
+      Serial.println("Day2 lights on are at:");
+      Serial.println(day2_lights_on.toString(buf2));
+   
     fed3.sessiontype = "Experiment";
+    fed3.DisplayPokes = false;       //Turn off poke indicators for free feeding mode
+    fed3.UpdateDisplay();            //Update display for free feeding session to remove poke displayt (they are on by default)
     fed3.run();
-    DateTime now = fed3.now(); 
+    DateTime now = fed3.now() + TimeSpan(0, 24, 0, 0); 
+    Serial.println("Now:");
+    Serial.println(now.toString(buf2));
+
     if (now < day1_lights_on) {
+      Serial.println("Feeding before Day1 lights on");
       fed3.Feed();
     } else if (now.day() == day1) {
       if (now > day1_experiment_end_hour && now < day1_lights_off){
+        Serial.println("Feeding Day 1 after exp");
         fed3.Feed();
       } else {
         /*do nothing*/
+        Serial.println("Food Restriction");
       }
     } else if (now.day() == day2){
       /* day 2 should have food restriction until before experiment ends*/
@@ -94,10 +116,12 @@ void loop() {
        {
         // Do nothing
        } else {
+        Serial.println("Feeding Day 2: food is back");
         fed3.timeout = 3; // new ITI here?
         fed3.Feed();   
        } 
     } else {
+      Serial.println("We are past day 2");
       fed3.Feed();
     }
   }
