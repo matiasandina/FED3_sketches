@@ -15,6 +15,9 @@ int lights_on_hour = 7;
 int lights_off_hour = 19;
 int experiment_end_hour = 14;
 // assert that exp_end_hour < lights_off_hour ? 
+// 24 h * 3600 seconds per hour, do .unixtime() to do math later
+long one_day = 24 * 3600; 
+long two_day = 2 * one_day; 
 
 // Global Variable Declaration //
 DateTime day0_dt;
@@ -39,12 +42,10 @@ void setup() {
   // Turn to true if you are using FEDWatcher
   //fed3.setSerial(true);
   // try to read day0 from SD?
-  auto one_day = TimeSpan(0, 24, 0, 0); 
-  auto two_day = TimeSpan(0, 48, 0, 0);
   day0_dt = fed3.now();
   // save day0 to SD
   // Math for day 1
-  day1_dt = day0_dt + TimeSpan(0, 24, 0, 0);
+  day1_dt = DateTime(day0_dt.unixtime() + one_day);
   day1 = day1_dt.day();
   // DateTime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour=0, uint8_t min=0, uint8_t sec=0)
   day1_lights_on = DateTime(day1_dt.year(), day1_dt.month(), day1_dt.day(), lights_on_hour);
@@ -53,8 +54,8 @@ void setup() {
   
   
   // Math for day 2
-  day2_dt = day0_dt + two_day;
-  int day2 = day2_dt.day();
+  day2_dt = DateTime(day0_dt.unixtime() + two_day);
+  day2 = day2_dt.day();
   day2_lights_on = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), lights_on_hour);
   day2_lights_off = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), lights_off_hour);
   day2_food_back = DateTime(day2_dt.year(), day2_dt.month(), day2_dt.day(), experiment_end_hour);
@@ -80,22 +81,25 @@ void loop() {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   if (fed3.FEDmode == 1) {
-      Serial.println("Day0 is at:");
+      Serial.println("Day0:");
       Serial.println(day0_dt.toString(buf2));
-      Serial.println("Day1 is at:");
+      Serial.println("Day1_dt is:");
       Serial.println(day1_dt.toString(buf2));
-      Serial.println("Day1 is at lights on at:");
+      Serial.println("Day1 lights on:");
       Serial.println(day1_lights_on.toString(buf2));
-      Serial.println("Day2 is at:");
-      Serial.println(day2_dt.toString(buf2));
-      Serial.println("Day2 lights on are at:");
+      Serial.println("Day1 lights off:");
+      Serial.println(day1_lights_off.toString(buf2));
+      Serial.println("Day2 lights on:");
       Serial.println(day2_lights_on.toString(buf2));
+      Serial.println("Day2 lights off:");
+      Serial.println(day2_lights_off.toString(buf2));
+
    
     fed3.sessiontype = "Experiment";
     fed3.DisplayPokes = false;       //Turn off poke indicators for free feeding mode
     fed3.UpdateDisplay();            //Update display for free feeding session to remove poke displayt (they are on by default)
     fed3.run();
-    DateTime now = fed3.now() + TimeSpan(0, 24, 0, 0); 
+    DateTime now = fed3.now(); 
     Serial.println("Now:");
     Serial.println(now.toString(buf2));
 

@@ -1,0 +1,10 @@
+MM:DD:YYYY hh:mm:ss,Library_Version,Session_type,Device_Number,Battery_Voltage,Motor_Turns,FR,Event,Active_Poke,Left_Poke_Count,Right_Poke_Count,Pellet_Count,Block_Pellet_Count,Retrieval_Time,InterPelletInterval,Poke_Time
+7/2/2024 17:41:40,1.9.2,FreeFeed,45,4.20,1,1,Pellet,Left,0,0,1,0,12.28,nan,nan
+7/2/2024 17:42:04,1.9.2,FreeFeed,45,4.20,4,1,Pellet,Left,0,0,2,0,6.51,24,nan
+7/2/2024 17:43:46,1.9.2,FreeFeed,45,4.20,2,1,Pellet,Left,0,0,3,0,Timed_out,102,nan
+7/2/2024 17:44:10,1.9.2,FreeFeed,45,4.21,1,1,WellEvent,Left,0,0,3,0,nan,nan,nan
+7/2/2024 17:44:14,1.9.2,FreeFeed,45,4.20,1,1,WellEvent,Left,0,0,3,0,nan,nan,nan
+7/2/2024 17:44:19,1.9.2,FreeFeed,45,4.20,1,1,WellEvent,Left,0,0,3,0,nan,nan,nan
+7/2/2024 17:44:23,1.9.2,FreeFeed,45,4.20,1,1,WellEvent,Left,0,0,3,0,nan,nan,nan
+7/2/2024 17:44:28,1.9.2,FreeFeed,45,4.21,1,1,WellEvent,Left,0,0,3,0,nan,nan,nan
+7/2/2024 17:44:37,1.9.2,FreeFeed,45,4.21,1,1,WellEvent,Left,0,0,3,0,nan,nan,nan
