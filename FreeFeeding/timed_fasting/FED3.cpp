@@ -309,10 +309,12 @@ void FED3::logWellEvent(int pulse) {
 
 void FED3::DisplayField(DateTime dt, bool showCursor, int y) {
     int x = 1;  // Starting x position for the datetime string
-    display.fillRect(x, y - 10, 200, 20, WHITE);  // Clear the area for fresh display
+    display.fillRect(x, y - 20, 200, 40, WHITE);  // Clear the area for fresh display
 
-    display.setFont(&Org_01);  // Set the font
+    display.setFont(&FreeSans9pt7b);  // Set the larger font
     display.setCursor(x, y);
+
+    int cursorPositionX = x;  // Track the cursor's x position
 
     // Function to print numbers with leading zero if less than 10
     auto printWithLeadingZero = [&](int number) {
@@ -321,7 +323,7 @@ void FED3::DisplayField(DateTime dt, bool showCursor, int y) {
     };
 
     for (int i = 0; i <= SECOND; i++) {
-        if (i == selectedField && showCursor) display.print('['); // Highlight start
+        int startPosition = display.getCursorX(); // Get starting position for underline
         
         switch (i) {
             case YEAR:
@@ -344,38 +346,79 @@ void FED3::DisplayField(DateTime dt, bool showCursor, int y) {
                 break;
         }
 
-        if (i == selectedField && showCursor) display.print(']'); // Highlight end
+        int endPosition = display.getCursorX(); // Get end position for underline
+        if (i == selectedField && showCursor) {
+            display.drawFastHLine(startPosition, y + 5, endPosition - startPosition, BLACK); // Draw underline
+        }
 
-        // Print separators except after the last component
+        // Print separators
         if (i < SECOND) {
-            if (i == DAY) display.print(" ");  // Space after day
-            else if (i == HOUR || i == MINUTE) display.print(":");  // Colon after hour and minute
-            else display.print("/");  // Slash after year and month
+            if (i == DAY) display.print(" ");
+            else if (i == HOUR || i == MINUTE) display.print(":");
+            else display.print("/");
         }
     }
 }
 
 void FED3::AdjustDateTime(DateTime& dt, bool increment) {
     int adjustment = increment ? 1 : -1;
+    int year = dt.year();
+    int month = dt.month();
+    int day = dt.day();
+    int hour = dt.hour();
+    int minute = dt.minute();
+    int second = dt.second();
+
     switch (selectedField) {
         case YEAR:
-            dt = DateTime(dt.year() + adjustment, dt.month(), dt.day(), dt.hour(), dt.minute(), dt.second());
+            year += adjustment;
             break;
-        case MONTH:
-            dt = DateTime(dt.year(), dt.month() + adjustment, dt.day(), dt.hour(), dt.minute(), dt.second());
+        case MONTH: {
+            month += adjustment;
+            if (month > 12) { month = 1; year++; }
+            if (month < 1) { month = 12; year--; }
             break;
-        case DAY:
-            dt = DateTime(dt.year(), dt.month(), dt.day() + adjustment, dt.hour(), dt.minute(), dt.second());
+        }
+        case DAY: {
+            int daysInMonth = getDaysInMonth(month, year);
+            day += adjustment;
+            if (day > daysInMonth) { day = 1; month++; if (month > 12) { month = 1; year++; } }
+            if (day < 1) { month--; if (month < 1) { month = 12; year--; } day = getDaysInMonth(month, year); }
             break;
+        }
         case HOUR:
-            dt = DateTime(dt.year(), dt.month(), dt.day(), dt.hour() + adjustment, dt.minute(), dt.second());
+            hour += adjustment;
+            if (hour > 23) { hour = 0; }
+            if (hour < 0) { hour = 23; }
             break;
         case MINUTE:
-            dt = DateTime(dt.year(), dt.month(), dt.day(), dt.hour(), dt.minute() + adjustment, dt.second());
+            minute += adjustment;
+            if (minute > 59) { minute = 0; hour++; if (hour > 23) { hour = 0; } }
+            if (minute < 0) { minute = 59; hour--; if (hour < 0) { hour = 23; } }
             break;
         case SECOND:
-            dt = DateTime(dt.year(), dt.month(), dt.day(), dt.hour(), dt.minute(), dt.second() + adjustment);
+            second += adjustment;
+            if (second > 59) { second = 0; minute++; if (minute > 59) { minute = 0; hour++; if (hour > 23) { hour = 0; } } }
+            if (second < 0) { second = 59; minute--; if (minute < 0) { minute = 59; hour--; if (hour < 0) { hour = 23; } } }
             break;
+    }
+
+    dt = DateTime(year, month, day, hour, minute, second);  // Create a new DateTime with the adjusted values
+}
+
+
+int FED3::getDaysInMonth(int month, int year) {
+    // Return the number of days in a given month, accounting for leap years
+    switch (month) {
+        case 2: // February
+            if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
+                return 29; // Leap year
+            else
+                return 28;
+        case 4: case 6: case 9: case 11:
+            return 30;
+        default:
+            return 31;
     }
 }
 
@@ -406,12 +449,12 @@ void FED3::DisplayDt(DateTime dt, int x, int y) {
     display.println(dt.second(), DEC);
 }
 
-bool FED3::acceptSelection() {
+bool FED3::acceptSelection(int holding_time) {
     // the  idea of this function is to have a general accept function by poking on well
     unsigned long startTime = millis();
     bool isAccepted = true;
 
-    while (millis() - startTime < 1000) {  // 1 second hold time
+    while (millis() - startTime < holding_time) {  // 1 second hold time
         if (IsWellEmpty()) {
             isAccepted = false;
             break;
@@ -442,7 +485,7 @@ DateTime FED3::SetEventDt(String event) {
     display.print("Now:");
     display.setCursor(1, 60);
     char displaybuffer[100];
-    sprintf(displaybuffer, "Selecting dt for: %s", event.c_str());
+    sprintf(displaybuffer, "dt for: %s", event.c_str());
     display.print(displaybuffer);
 
     selectedField = YEAR; // Start with YEAR field selected
@@ -468,17 +511,22 @@ DateTime FED3::SetEventDt(String event) {
         }
 
         if (!IsWellEmpty()) {
-            bool selection_accepted = acceptSelection();
-            if (selection_accepted) { // Confirm that the loop completed without the sensor being unblocked
+            bool selection_accepted = acceptSelection(500);
+            if (selection_accepted) {
+                if (selectedField == SECOND) { // If currently on 'second', finish setting
+                    setting_event = false;
+                    display.fillRect(0, 0, 400, 400, WHITE); // clear the display
+                    display.setCursor(1, 50);
+                    display.print("Event dt set to:");
+                    DisplayField(event_time, false, 120); // Display final datetime without cursor
+                    delay(5000);
+                } else {
+                    selectedField = static_cast<DateTimeField>(selectedField + 1); // Move to the next field
+                }
                 Tone(4000, 100);
                 delay(500);
                 Tone(4000, 100);
                 delay(500);
-                setting_event = false;
-                display.fillRect(0, 0, 400, 400, WHITE); // clear the display
-                display.setCursor(1, 50);
-                display.print("Event dt set to:");
-                DisplayField(event_time, selectedField, false); // Display the final datetime without cursor
             }
         }
 
@@ -971,6 +1019,42 @@ void FED3::DisplayTimedFeeding(){
   display.print (":00 to ");
   display.print (timedEnd);
   display.print (":00");
+}
+
+// Function to display the feeding time range
+void FED3::DisplayFeedingDT(DateTime start_dt, DateTime stop_dt) {
+    display.setCursor(35, 65);
+    display.print(start_dt.hour());
+    display.print(":");
+    if (start_dt.minute() < 10) display.print('0');
+    display.print(start_dt.minute());
+    display.print(" to ");
+    display.print(stop_dt.hour());
+    display.print(":");
+    if (stop_dt.minute() < 10) display.print('0');
+    display.print(stop_dt.minute());
+}
+
+// Function to display feeding/fasting indicators at a specified location
+void FED3::DisplayFeedingStatus(bool isFasting) {
+    static bool lastStatus = !isFasting; // Initialize with the opposite to ensure the initial update
+
+    if (lastStatus != isFasting) { // Only update if the status has changed
+        lastStatus = isFasting; // Update last known status
+        int xPosition = 120; // Adjust this value to place indicators on the far right
+
+        // Clear the area where indicators will be displayed to avoid overplotting
+        display.fillRect(xPosition, 55, 30, 30, WHITE);
+
+        //display.fillCircle(xPosition + 10, 99, 5, WHITE); // Pellet indicator
+        //display.drawCircle(xPosition + 10, 99, 5, BLACK);
+
+        if (isFasting) {
+            display.fillTriangle(xPosition + 5, 70, xPosition + 11, 74, xPosition + 5, 78, BLACK);
+        } else {
+            display.fillCircle(xPosition + 10, 99, 5, BLACK); // Feeding indicator
+        }
+    }
 }
 
 void FED3::DisplayMinPoke(){

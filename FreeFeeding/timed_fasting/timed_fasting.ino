@@ -39,17 +39,24 @@ void setup() {
   Serial.println("Fasting Stop");
   sprintf(time_buffer, "%d-%02d-%02d %02d:%02d", fasting_stop_dt.year(), fasting_stop_dt.month(), fasting_stop_dt.day(), fasting_stop_dt.hour(), fasting_stop_dt.minute());
   Serial.println(time_buffer);
+  // Display the timed fasting session
+  //fed3.DisplayTimed = true;
 }
 
 
 void loop() {
   fed3.run(); // Call fed.run at least once per loop
   DateTime now = fed3.now(); // get the current time from FED3's RTC
-  if (now >= fasting_start_dt && now <= fasting_stop_dt) {
-    Serial.println("Fasting and Checking Well");
-    fed3.CheckWell();
+  bool isFasting = now >= fasting_start_dt && now <= fasting_stop_dt;
+  fed3.DisplayFeedingStatus(isFasting); // This might get plotted over
+  if (isFasting) {
+      Serial.println("Fasting and Checking Well");
+      fed3.CheckWell();
+      // this will only show when not being cleared (e.g., while )
+      fed3.DisplayFeedingDT(fasting_start_dt, fasting_stop_dt); 
   } else {
-    Serial.println("Feeding is Active");
-    fed3.Feed(); // Drop pellet 
+      Serial.println("Feeding is Active");
+      fed3.Feed(); // Drop pellet 
+      fed3.DisplayFeedingDT(fasting_start_dt, fasting_stop_dt); 
   }
 }

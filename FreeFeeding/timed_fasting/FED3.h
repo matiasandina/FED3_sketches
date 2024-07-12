@@ -251,6 +251,8 @@ class FED3 {
         // for allowing the user to set an event time via .ino
         // this can be used to trigger manual datetime entries
         DateTime SetEventDt(String event);
+        void DisplayFeedingDT(DateTime start_dt, DateTime stop_dt);
+        void DisplayFeedingStatus(bool isFasting);
 
 
     private:
@@ -263,16 +265,17 @@ class FED3 {
         bool cursorVisible = false;
         // Constants for field positions on the display
         // Example positions for Year, Month, Day, Hour, Minute, Second (total 6 places)
-        const int FIELD_POS[6] = {1, 20, 40, 60, 80, 100}; 
+        const int FIELD_POS[6] = {1, 20, 21, 55, 100, 105}; 
         // Enum to track which field is selected
         enum DateTimeField { YEAR, MONTH, DAY, HOUR, MINUTE, SECOND };
         DateTimeField selectedField = YEAR;
         // new GUI variables
-        bool acceptSelection();
+        bool acceptSelection(int holding_time);
         void updateCursor();
         void DisplayField(DateTime dt, bool showCursor, int y);
         void DisplayDt(DateTime dt, int x, int y);
         void AdjustDateTime(DateTime& dt, bool increment);
+        int getDaysInMonth(int month, int year);
 
 };
 
