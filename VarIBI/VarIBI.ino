@@ -210,7 +210,7 @@ void createBoutLogFile() {
   Serial.print("Opened bout log file: ");
   Serial.println(boutFileName);
 
-  boutFile.println("Bout_Number,Bout_Start,Bout_Stop,Pellets_Per_Bout, IBI");
+  boutFile.println("Bout_Number,Bout_Start, Bout_Stop, Bout_End, Pellets_Per_Bout, IBI");
   // Close the file after operation
   boutFile.close();
 }
