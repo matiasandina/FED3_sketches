@@ -411,7 +411,7 @@ void FED3::FeedNonBlocking(int pulse, bool pixelsoff) {
                 continueProcessing = false;  // Break the loop and do not process further.
                 //Do we want to set state back to init here? Particularly in case nothing gets logged?
                 // TODO: maybe some display of status on the display!?
-                // TODO: can be used to wait for external signal 
+                // TODO: can be used to wait for external signal
                 }
             case Error:{
                 //Placeholder, not sure how to handle this

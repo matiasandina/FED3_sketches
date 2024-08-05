@@ -11,8 +11,8 @@ int max_pellets_per_day = 250;  // Maximum number of pellets to be dispensed in 
 int cumulative_pellets = 0;  // To keep track of the total dispensed pellets for the current day
 
 // Bout and IBI configuration
-int bout_duration_options[2] = {300, 420};  // Bout duration options in seconds
-int ibi_options[3] = {1800, 3600, 5400};  // IBI options in seconds
+int bout_duration_options[2] = {60, 30};  // Bout duration options in seconds
+int ibi_options[3] = {20, 15, 30};  // IBI options in seconds
 
 // Active and rest phase configuration
 int active_phase_start = 19;  // Active phase starts at 19:00 (7 PM)
@@ -79,33 +79,46 @@ void loop() {
     Serial.print("Bout end time (millis): "); Serial.println(bout_end_time);
 
 
-    bool dispenseEvent = false; // moved up here to initialize
+    // bool dispenseEvent = false; // moved up here to initialize
+    int pellets_before_feed;
+
+    int pellets_after_feed;
 
     bout_start_dt = fed3.now();
+
     // Dispense pellets during the bout
     while (millis() < bout_end_time && cumulative_pellets < max_pellets_per_day) {
 
       Serial.print("Bout duration (seconds): "); Serial.println(bout_duration);
       if (pellets_per_bout > 0) {
 
-        // bool dispenseEvent = false;
-        if (fed3.feedStateToString()== "Dispensing"){
-          dispenseEvent = true;
-        }
-        else if (fed3.feedStateToString() == "Logging" and !fed3.IsWellEmpty()){
-          dispenseEvent = true;
-        }
-        else{
-          dispenseEvent = false;
-        }
+        pellets_before_feed = fed3.PelletCount;
+
+        // // bool dispenseEvent = false;
+        // // if (fed3.feedStateToString()== "Dispensing"){
+        // //   dispenseEvent = true;
+        // // }
+        // if (fed3.feedStateToString() == "Logging" and !fed3.IsWellEmpty()){
+        //   dispenseEvent = true;
+        // }
+        // // else{
+        // //   dispenseEvent = false;
+        // // }
 
         fed3.FeedNonBlocking();
+
+        pellets_after_feed = fed3.PelletCount;
+
         // fed3.Feed(skipRemovalCheck=false, blockUntilRemoval=false);  // Dispense a pellet do not hang in the while loop
 
-        if (dispenseEvent == true){ //check pellet event before updating
+        if (pellets_before_feed != pellets_after_feed){ //check pellet event before updating
           pellets_per_bout --;
           cumulative_pellets++;
+          Serial.print("Pellets Left in bout: "); Serial.println(pellets_per_bout);
+          delay(2)
         }
+
+
 
         Serial.print("Pellets Left in bout: "); Serial.println(pellets_per_bout);
         Serial.print("Total Pellets: "); Serial.println(cumulative_pellets);
@@ -122,6 +135,7 @@ void loop() {
     bout_stop_dt = fed3.now();
     int ibi = sampleIBI();
     unsigned long next_bout_start = millis() + ibi * 1000;  // Calculate next bout start
+    dispenseEvent = false;
 
     writeBoutMetadata(bout_number, bout_start_dt, bout_stop_dt, bout_end_time, max_pellets_per_bout, ibi);
     bout_number ++;
@@ -210,7 +224,7 @@ void createBoutLogFile() {
   Serial.print("Opened bout log file: ");
   Serial.println(boutFileName);
 
-  boutFile.println("Bout_Number,Bout_Start, Bout_Stop, Bout_End, Pellets_Per_Bout, IBI");
+  boutFile.println("Bout_Number, Bout_Start, Bout_Stop, Bout_End, Pellets_Per_Bout, IBI");
   // Close the file after operation
   boutFile.close();
 }
