@@ -115,7 +115,7 @@ void loop() {
           pellets_per_bout --;
           cumulative_pellets++;
           Serial.print("Pellets Left in bout: "); Serial.println(pellets_per_bout);
-          delay(2)
+          delay(2);
         }
 
 
@@ -135,7 +135,6 @@ void loop() {
     bout_stop_dt = fed3.now();
     int ibi = sampleIBI();
     unsigned long next_bout_start = millis() + ibi * 1000;  // Calculate next bout start
-    dispenseEvent = false;
 
     writeBoutMetadata(bout_number, bout_start_dt, bout_stop_dt, bout_end_time, max_pellets_per_bout, ibi);
     bout_number ++;
