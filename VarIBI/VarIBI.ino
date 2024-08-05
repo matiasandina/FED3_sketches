@@ -123,7 +123,7 @@ void loop() {
     int ibi = sampleIBI();
     unsigned long next_bout_start = millis() + ibi * 1000;  // Calculate next bout start
 
-    writeBoutMetadata(bout_number, bout_start_dt, bout_stop_dt, bout_end_time, pellets_per_bout, ibi);
+    writeBoutMetadata(bout_number, bout_start_dt, bout_stop_dt, bout_end_time, max_pellets_per_bout, ibi);
     bout_number ++;
 
     Serial.print(F("Inter-bout interval (seconds): ")); Serial.println(ibi);
