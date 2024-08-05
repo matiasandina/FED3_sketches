@@ -11,8 +11,8 @@ int max_pellets_per_day = 250;  // Maximum number of pellets to be dispensed in 
 int cumulative_pellets = 0;  // To keep track of the total dispensed pellets for the current day
 
 // Bout and IBI configuration
-int bout_duration_options[2] = {60, 30};  // Bout duration options in seconds
-int ibi_options[3] = {20, 15, 30};  // IBI options in seconds
+int bout_duration_options[2] = {300, 420};  // Bout duration options in seconds
+int ibi_options[3] = {1800, 3600, 5400};  // IBI options in seconds
 
 // Active and rest phase configuration
 int active_phase_start = 19;  // Active phase starts at 19:00 (7 PM)
